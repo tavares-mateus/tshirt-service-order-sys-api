@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_e057f986_e22d_4b48_94ab_cf25dd45cc53_Output_Payload = Array<{  country: String,   productCode: Number,   size: "S" | "XL" | "L" | "M" | "XXL",   stateOrProvince: String,   address2?: String,   city: String,   orderId: Number,   price: Number,   address1: String,   postalCode: Number,   name: String,   email: String,   _?: Any} {"description": "T-shirt order fields with order id."}>
+

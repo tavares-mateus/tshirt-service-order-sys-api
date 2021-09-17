@@ -1,0 +1,17 @@
+%dw 2.0
+
+type auto_768bdd06_1b3c_4e84_aa5a_2f0100aedb5c_Input_Payload = {|
+  orderId: Number, 
+  size: String, 
+  productCode: Number, 
+  price: Number, 
+  email: String, 
+  name: String, 
+  address1: String, 
+  address2: String, 
+  city: String, 
+  stateOrProvince: String, 
+  postalCode: Number, 
+  country: String
+|}
+

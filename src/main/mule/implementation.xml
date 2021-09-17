@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="getOrders" doc:id="e057f986-e22d-4b48-94ab-cf25dd45cc53">
+		<db:select doc:name="Select Orders from DB" doc:id="2b2ef3ba-6b80-45e6-b9b9-71e1ca383a70" config-ref="Heroku_Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM public."ORDERS"
+WHERE (CAST(:size AS VARCHAR) IS NULL OR "size" = :size) 
+AND (CAST(:productCode AS INTEGER) IS NULL OR "productCode" = :productCode)
+
+]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	size: attributes.queryParams.size default null,
+	productCode: attributes.queryParams.productCode
+}]]]></db:input-parameters>
+		</db:select>
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="3b175433-9e64-4d29-957b-7609a4a18c70" config-ref="Validation_Config" message="Order(s) Not Found!">
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
+		<ee:transform doc:name="Java to JSON" doc:id="4aa5e5a7-9892-4b7c-b8f2-bb519d034550" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value, index) -> {
+	"orderId": value.orderId,
+	"size": value.size,
+	"productCode": value.productCode,
+	"price": value.price,
+	"email": value.email,
+	"name": value.name,
+	"address1": value.address1,
+	("address2": value.address2) if (value.address2 != null),
+	"city": value.city,
+	"stateOrProvince": value.stateOrProvince,
+	"postalCode": value.postalCode,
+	"country": value.country
+}
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getOrdersByID" doc:id="768bdd06-1b3c-4e84-aa5a-2f0100aedb5c" >
+		<db:select doc:name="Select an Order by Id" doc:id="7aaf7919-e95d-4fdb-9f4b-eb5ff61cee70" config-ref="Heroku_Database_Config">
+			<db:sql ><![CDATA[SELECT * 
+FROM public."ORDERS"
+WHERE "orderId" = :orderId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'orderId': message.attributes.uriParams.orderId
+}]]]></db:input-parameters>
+		</db:select>
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="1b31c3e6-1911-419f-97e6-27c382b2ce2e" config-ref="Validation_Config" message="Order(s) Not Found!">
+			<error-mapping targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
+		<ee:transform doc:name="Java to JSON" doc:id="5e41acd0-74d8-483d-84f7-dcf631c34fa5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(value, index) -> {
+	"orderId": value.orderId,
+	"size": value.size,
+	"productCode": value.productCode,
+	"price": value.price,
+	"email": value.email,
+	"name": value.name,
+	"address1": value.address1,
+	("address2": value.address2) if (value.address2 != null),
+	"city": value.city,
+	"stateOrProvince": value.stateOrProvince,
+	"postalCode": value.postalCode,
+	"country": value.country
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="postOrder" doc:id="696d24d4-d835-4273-8ff4-efc4b424d33e" >
+		<ee:transform doc:name="JSON to Java" doc:id="42a6dc05-c212-4154-876e-75ea8ab7bc20" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert Order " doc:id="0fb0a9cc-7e27-49c4-9e13-0baca3301c5f" config-ref="Heroku_Database_Config" autoGenerateKeys="true">
+			<db:sql ><![CDATA[INSERT INTO public."ORDERS"(
+	"size", "productCode", "price", "email", "name", "address1", "address2", "city", "stateOrProvince", "postalCode", "country")
+VALUES (:size, :productCode, :price, :email, :name, :address1, :address2, :city, :stateOrProvince, :postalCode, :country)
+RETURNING "orderId";]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	size: payload.size,
+	productCode: payload.productCode,
+	price: payload.price,
+	email: payload.email,
+	name: payload.name,
+	address1: payload.address1,
+	address2: payload.address2,
+	city: payload.city,
+	stateOrProvince: payload.stateOrProvince,
+	postalCode: payload.postalCode,
+	country: payload.country
+}]]]></db:input-parameters>
+			<db:auto-generated-keys-column-names >
+				<db:auto-generated-keys-column-name value="orderId" />
+			</db:auto-generated-keys-column-names>
+		</db:insert>
+		<ee:transform doc:name="Order Created" doc:id="2a798f96-3d7f-45ee-a656-3aed440d1d52" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "Order created!",
+	"orderId": payload.generatedKeys.orderId
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="deleteOrderById" doc:id="793ffa87-6d0f-486e-ba00-f7b4b73358bc" >
+		<db:delete doc:name="Delete an Order by Id" doc:id="58bc8950-758b-4f9e-a1a8-e2664e1eddbc" config-ref="Heroku_Database_Config">
+			<db:sql ><![CDATA[DELETE
+FROM public."ORDERS"
+WHERE "orderId" = :orderId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'orderId': message.attributes.uriParams.orderId
+}]]]></db:input-parameters>
+		</db:delete>
+		<validation:is-true doc:name="payload == 1" doc:id="3cec6b8f-6d18-4f6e-bb2f-8789da7585f4" config-ref="Validation_Config" expression="#[payload == 1]" message="Order(s) Not Found!">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<ee:transform doc:name="Order Deleted" doc:id="510a05ea-60aa-4f87-9fdd-4e397bcace88" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "message": "Order deleted!"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="updateOrderById" doc:id="bdb734c3-df3f-445c-84bb-2d93e5139849" >
+		<db:update doc:name="Update an Order by Id" doc:id="f16e1f3b-ef28-430a-8031-4848a4ff99c7" config-ref="Heroku_Database_Config">
+			<db:sql ><![CDATA[UPDATE public."ORDERS"
+SET 
+	"size" = :size,
+	"productCode" = :productCode,
+	"price" = :price,
+	"email" = :email,
+	"name" = :name,
+	"address1" = :address1,
+	"address2" = :address2,
+	"city" = :city,
+	"stateOrProvince" = :stateOrProvince,
+	"postalCode" = :postalCode,
+	"country" = :country
+WHERE "orderId" = :orderId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	size: payload.size,
+	productCode: payload.productCode,
+	price: payload.price,
+	email: payload.email,
+	name: payload.name,
+	address1: payload.address1,
+	address2: payload.address2,
+	city: payload.city,
+	stateOrProvince: payload.stateOrProvince,
+	postalCode: payload.postalCode,
+	country: payload.country,
+	orderId: message.attributes.uriParams.orderId
+}]]]></db:input-parameters>
+		</db:update>
+		<validation:is-true doc:name="payload.affectedRows == 1" doc:id="548fbd05-70d7-494f-94ab-9c2455c0a62d" config-ref="Validation_Config" expression="#[payload.affectedRows == 1]" message="Order(s) Not Found!">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<ee:transform doc:name="Order Updated" doc:id="25450748-401e-42f2-be73-5c3303b9988d" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Order updated!"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

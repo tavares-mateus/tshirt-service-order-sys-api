@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<db:config name="Heroku_Database_Config" doc:name="Database Config"
+		doc:id="d350e853-a835-4aa3-a509-ebed88f5b9bb">
+		<db:generic-connection
+			url="${db.url}"
+			driverClassName="${db.driver}" user="${db.user}"
+			password="${db.password}" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="dc05a64b-9e85-4912-8479-011a8459ac54" file="config.yaml" />
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="445f867b-7ff5-4ac6-9ba4-541f43715961" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="91c2064d-c69e-47ac-8a11-c51fd323a38b" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+</mule>
