@@ -26,7 +26,7 @@ AND (CAST(:productCode AS INTEGER) IS NULL OR "productCode" = :productCode)
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload map(value, index) -> {
+(payload orderBy(order) -> order.orderId) map(value, index) -> {
 	"orderId": value.orderId,
 	"size": value.size,
 	"productCode": value.productCode,
@@ -39,9 +39,7 @@ payload map(value, index) -> {
 	"stateOrProvince": value.stateOrProvince,
 	"postalCode": value.postalCode,
 	"country": value.country
-}
-
-]]></ee:set-payload>
+}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 	</flow>
